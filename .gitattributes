@@ -2,3 +2,5 @@
 *.lua text eol=lf
 *.toc text eol=crlf
 *.xml text eol=lf
+*.tga binary
+*.blp binary

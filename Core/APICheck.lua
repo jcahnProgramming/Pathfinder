@@ -238,10 +238,8 @@ end
 -- 4. User-waypoint chat hyperlink
 ---------------------------------------------------------------------------
 local function buildManualLink(mapID, x, y)
-	return ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
-		mapID, math.floor(x * 10000 + 0.5), math.floor(y * 10000 + 0.5), MAP_PIN_HYPERLINK or "Map Pin Location")
+	return ns.Waypoint.BuildLink(mapID, x, y)
 end
-APICheck.BuildManualLink = buildManualLink
 
 local function checkHyperlink(previous)
 	local result = { id = "hyperlink", label = "4. User-waypoint chat hyperlink" }

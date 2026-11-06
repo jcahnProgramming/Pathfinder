@@ -2,7 +2,16 @@
 
 A map overlay for **WoW Forever** (the Classic+ client: level 60, Eastern Kingdoms and Kalimdor). It adds clickable pins to the world map and minimap. Click a pin to set the game's own waypoint and super-track it, so you get the built-in arrow and distance.
 
-> **Status:** 0.1.0 is the skeleton: settings, slash commands, saved data and an API check. The map layers arrive in later versions (see [CHANGELOG.md](CHANGELOG.md)).
+> **Status:** 0.2.0 adds the flight path layer on the world map. The other layers arrive in later versions (see [CHANGELOG.md](CHANGELOG.md) and [docs/ROADMAP.md](docs/ROADMAP.md)).
+
+## Pin clicks
+
+| Input | Result |
+| --- | --- |
+| Click | Set the waypoint and arrow |
+| Shift-click (chat box open) | Insert the map pin link into chat |
+| Ctrl-click | Clear the waypoint |
+| Right-click | Zoom the map out, as usual |
 
 ## Features (planned for 1.0)
 
@@ -24,6 +33,7 @@ Each layer can be turned on or off.
 | `/pathfinder` or `/pf` | Open the settings panel |
 | `/pf api` | Run the API check and print the details |
 | `/pf linktest` | Test the map pin chat link (prints it to your own chat only and sends nothing) |
+| `/pf taxi` | Flight path check: faction mapping, cached paths and status counts for your continent |
 | `/pf version` | Print the addon version |
 | `/pf help` | List the commands |
 
@@ -50,10 +60,11 @@ Copy or link this folder to `World of Warcraft\_forever_\Interface\AddOns\Pathfi
 
 ```
 Pathfinder.toc
-Core/       namespace, events, saved variables, API check
+Core/       namespace, events, saved variables, waypoints, flight path cache, API check
 Settings/   settings panel, slash commands
-Data/       static tables: flight masters, entrances, level ranges (from 0.2.0)
-Layers/     one file per pin layer (from 0.2.0)
+Layers/     shared pin template + one file per pin layer
+Media/      pin ring and glow textures
+Data/       static tables: entrances, level ranges (from 0.3.0)
 UI/         pin editor, management panel, share popup (from 0.5.0)
 Sharing/    addon messages and chat links (from 0.6.0)
 ```

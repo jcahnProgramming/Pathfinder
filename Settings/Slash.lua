@@ -5,6 +5,7 @@ local COMMANDS = {
 	{ "", "open the settings panel" },
 	{ "api", "run the API availability check and print details" },
 	{ "linktest", "test the native map pin chat link (prints locally, sends nothing)" },
+	{ "taxi", "flight path check: faction mapping, cached paths, status counts" },
 	{ "version", "print the addon version" },
 	{ "help", "show this list" },
 }
@@ -29,6 +30,8 @@ SlashCmdList.PATHFINDER = function(input)
 		ns.APICheck:PrintReport(true)
 	elseif cmd == "linktest" then
 		ns.APICheck:LinkTest()
+	elseif cmd == "taxi" then
+		ns.FlightPaths:PrintDebug()
 	elseif cmd == "version" then
 		ns:Print("version %s", ns.version)
 	else
