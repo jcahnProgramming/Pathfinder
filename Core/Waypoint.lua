@@ -32,6 +32,7 @@ local function translate(fromMapID, x, y, toMapID)
 	if not mapPos then return nil end
 	return mapPos:GetXY()
 end
+ns.TranslateMapPos = function(_, fromMapID, x, y, toMapID) return translate(fromMapID, x, y, toMapID) end
 
 -- Returns a map and coordinates where a user waypoint is allowed. Continent maps usually
 -- don't allow one, so this descends into the zone (or city) under the point.

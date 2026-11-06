@@ -329,24 +329,31 @@ function APICheck:Get(id)
 	end
 end
 
+-- verbose = /pf api (full report to the debug window); otherwise the short login summary in chat.
 function APICheck:PrintReport(verbose)
 	local report = self.report or self:Run()
 	local c = report.client
-	ns:Print("v%s API check (client %s build %s, interface %s)", ns.version, tostring(c.version), tostring(c.build), tostring(c.interface))
+	local out = ns:NewReport(("v%s API check (client %s build %s, interface %s)"):format(
+		ns.version, tostring(c.version), tostring(c.build), tostring(c.interface)))
 	for _, r in ipairs(report.results) do
-		DEFAULT_CHAT_FRAME:AddMessage(("  %s: %s  |cffaaaaaa%s|r"):format(r.label, STATUS_TEXT[r.status], r.detail or ""))
+		out:Add("%s: %s  |cffaaaaaa%s|r", r.label, STATUS_TEXT[r.status], r.detail or "")
 	end
 
 	if verbose then
+		out:Add("")
+		out:Add("Supporting APIs:")
 		for _, s in ipairs(report.support) do
-			local extra = #s.missing > 0 and (" |cffaaaaaamissing " .. table.concat(s.missing, ", ") .. "|r") or ""
-			DEFAULT_CHAT_FRAME:AddMessage(("  - %s: %s%s"):format(s.label, STATUS_TEXT[s.status], extra))
+			local extra = #s.missing > 0 and ("  missing " .. table.concat(s.missing, ", ")) or ""
+			out:Add("  - %s: %s%s", s.label, STATUS_TEXT[s.status], extra)
 		end
-		DEFAULT_CHAT_FRAME:AddMessage("  |cffaaaaaaFull data is saved to PathfinderDB.apiReport on /reload or logout.|r")
+		out:Add("")
+		out:Add("Full data is saved to PathfinderDB.apiReport on /reload or logout.")
+		out:ToWindow()
 	else
 		local bad = 0
 		for _, s in ipairs(report.support) do if s.status ~= OK then bad = bad + 1 end end
-		DEFAULT_CHAT_FRAME:AddMessage(("  Supporting APIs: %d/%d OK. Type |cffffff00/pf api|r for details."):format(#report.support - bad, #report.support))
+		out:Add("Supporting APIs: %d/%d OK. Type |cffffff00/pf api|r for details.", #report.support - bad, #report.support)
+		out:ToChat()
 	end
 end
 
@@ -382,10 +389,16 @@ function APICheck:LinkTest()
 
 	local manual = buildManualLink(mapID, x, y)
 	local works = ok and type(link) == "string" and link ~= "" and not isSecret(link)
-	ns:Print("Link test (printed locally, nothing was sent):")
-	DEFAULT_CHAT_FRAME:AddMessage("  Native: " .. (works and link or ("|cffff3333failed|r " .. tostring(link))))
+
+	local out = ns:NewReport("Link test (nothing was sent)")
+	out:Add("Native link: %s", works and "OK" or ("FAILED " .. tostring(link)))
+	if works then out:Add("  raw: %s", link) end
+	out:Add("Manual link raw: %s", manual)
+	out:Add("Both links were also printed in chat, since links can only be clicked there.")
+	out:ToWindow()
+	-- The links themselves must stay in chat to be clickable.
+	if works then DEFAULT_CHAT_FRAME:AddMessage("  Native: " .. link) end
 	DEFAULT_CHAT_FRAME:AddMessage("  Manual: " .. manual)
-	DEFAULT_CHAT_FRAME:AddMessage("  Click both. Each should open the map with a pin; shift-click into chat to see if it posts.")
 
 	local r = self:Get("hyperlink")
 	if r then

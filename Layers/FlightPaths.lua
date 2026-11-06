@@ -111,7 +111,7 @@ end
 
 local function refresh(provider)
 	provider:RemoveAllData()
-	if not ns:GetSetting("showFlightPaths") then return end
+	if not ns:IsLayerShown("showFlightPaths") then return end
 
 	local map = provider:GetMap()
 	local mapID = map:GetMapID()
@@ -144,7 +144,7 @@ function FlightPaths:OnEnable()
 	end)
 
 	ns:On("SETTING_CHANGED", function(key)
-		if key == "showFlightPaths" or key == "pinScale" then FlightPaths:Refresh() end
+		if key == "pinScale" or ns:AffectsLayer("showFlightPaths", key) then FlightPaths:Refresh() end
 	end)
 	ns:On("TAXI_CACHE_UPDATED", function() FlightPaths:Refresh() end)
 end
@@ -153,30 +153,32 @@ end
 -- /pf taxi: sanity check of faction mapping, cache, and status counts
 ---------------------------------------------------------------------------
 function FlightPaths:PrintDebug()
+	local out = ns:NewReport("Flight path check")
 	local enumParts = {}
 	for name, value in pairs(FACTION) do table.insert(enumParts, ("%d = %s"):format(value, name)) end
 	table.sort(enumParts)
 	local source = Enum.FlightPathFaction and "Enum.FlightPathFaction" or "built-in fallback"
-	ns:Print("Flight paths: faction enum (%s): %s", source, table.concat(enumParts, ", "))
+	out:Add("Faction enum (%s): %s", source, table.concat(enumParts, ", "))
 
 	local playerFaction = UnitFactionGroup("player")
-	DEFAULT_CHAT_FRAME:AddMessage(("  You: %s (enum %s). Known flight paths cached: %d."):format(
-		tostring(playerFaction), tostring(self:GetPlayerFaction()), ns.TaxiCache:CountKnown()))
+	out:Add("You: %s (enum %s). Known flight paths cached: %d.",
+		tostring(playerFaction), tostring(self:GetPlayerFaction()), ns.TaxiCache:CountKnown())
 
 	local scan = ns.charDB.lastTaxiScan
 	if scan then
 		local states = {}
 		for k, v in pairs(scan.states or {}) do table.insert(states, k .. "=" .. v) end
 		table.sort(states)
-		DEFAULT_CHAT_FRAME:AddMessage(("  Last flight-master scan (%s): %d nodes returned, states %s, %d new."):format(
-			tostring(scan.source), scan.returned or 0, #states > 0 and table.concat(states, " ") or "none", scan.added or 0))
+		out:Add("Last flight-master scan (%s): %d nodes returned, states %s, %d new.",
+			tostring(scan.source), scan.returned or 0, #states > 0 and table.concat(states, " ") or "none", scan.added or 0)
 	else
-		DEFAULT_CHAT_FRAME:AddMessage("  No flight-master scan yet. Open any flight master's map to cache known paths.")
+		out:Add("No flight-master scan yet. Open any flight master's map to cache known paths.")
 	end
 
 	local continent = ns:GetContinentForMap(C_Map.GetBestMapForUnit("player"))
 	if not continent then
-		DEFAULT_CHAT_FRAME:AddMessage("  Can't determine your continent here.")
+		out:Add("Can't determine your continent here.")
+		out:ToWindow()
 		return
 	end
 	local nodes = self:GetNodesForMap(continent)
@@ -188,16 +190,15 @@ function FlightPaths:PrintDebug()
 		samples[f] = samples[f] or {}
 		if #samples[f] < 2 then table.insert(samples[f], node) end
 	end
-	DEFAULT_CHAT_FRAME:AddMessage(("  %s: %d nodes |cff33ff33%d discovered|r, |cffffd100%d not discovered|r, |cffff3333%d unavailable|r."):format(
-		C_Map.GetMapInfo(continent).name, #nodes, counts[STATUS.DISCOVERED] or 0, counts[STATUS.AVAILABLE] or 0, counts[STATUS.UNAVAILABLE] or 0))
+	out:Add("%s: %d nodes, %d discovered, %d not discovered, %d unavailable.",
+		C_Map.GetMapInfo(continent).name, #nodes, counts[STATUS.DISCOVERED] or 0, counts[STATUS.AVAILABLE] or 0, counts[STATUS.UNAVAILABLE] or 0)
 
 	for _, f in ipairs({ FACTION.Neutral, FACTION.Horde, FACTION.Alliance }) do
 		for _, node in ipairs(samples[f] or {}) do
-			local status = self:GetStatus(node)
-			local c = STATUS_COLOR[status]
-			DEFAULT_CHAT_FRAME:AddMessage(("    #%d %s: faction %d (%s), atlas %s -> |cff%02x%02x%02x%s|r"):format(
+			out:Add("  #%d %s: faction %d (%s), atlas %s -> %s",
 				node.nodeID, node.name or "?", node.faction, factionName(node.faction), tostring(node.atlasName),
-				math.floor(c[1] * 255), math.floor(c[2] * 255), math.floor(c[3] * 255), STATUS_TEXT[status]))
+				STATUS_TEXT[self:GetStatus(node)])
 		end
 	end
+	out:ToWindow()
 end

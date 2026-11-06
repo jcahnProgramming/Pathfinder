@@ -1,15 +1,15 @@
--- Shared world map pin behavior for every Pathfinder layer: icon + tinted glow ring, size from
--- settings, tooltip, and the standard click conventions (see docs/ROADMAP.md).
+-- Shared world map pin behavior for every Pathfinder layer: icon + icon-shaped status glow, size
+-- from settings, tooltip, and the standard click conventions (see docs/ROADMAP.md).
 --
 -- Layers acquire pins with a data table:
 --   { mapID, x, y, atlas | texture, color = {r, g, b}, tooltip = function(tooltip, data), clickOptions }
 local _, ns = ...
 
 local BASE_SIZE = 16
-local RING_SCALE = 1.7
-local GLOW_SCALE = 2.4
-
-ns.MEDIA = "Interface\\AddOns\\" .. ns.name .. "\\Media\\"
+-- The glow is the icon's own silhouette, desaturated, tinted and drawn additively behind it.
+-- Two copies give a soft falloff while staying subtle.
+local GLOW_INNER_SCALE, GLOW_INNER_ALPHA = 1.28, 0.75
+local GLOW_OUTER_SCALE, GLOW_OUTER_ALPHA = 1.55, 0.35
 
 PathfinderMapPinMixin = CreateFromMixins(MapCanvasPinMixin)
 
@@ -19,28 +19,42 @@ function PathfinderMapPinMixin:OnLoad()
 	if not pcall(self.UseFrameLevelType, self, "PIN_FRAME_LEVEL_FLIGHT_POINT") then
 		pcall(self.UseFrameLevelType, self, "PIN_FRAME_LEVEL_AREA_POI")
 	end
-	self.Ring:SetTexture(ns.MEDIA .. "ring")
-	self.Glow:SetTexture(ns.MEDIA .. "glow")
+	self.GlowInner:SetDesaturated(true)
+	self.GlowOuter:SetDesaturated(true)
+end
+
+local function setArt(texture, data)
+	if data.atlas then
+		texture:SetAtlas(data.atlas)
+	else
+		texture:SetTexture(data.texture or "Interface\\Icons\\INV_Misc_QuestionMark")
+	end
 end
 
 function PathfinderMapPinMixin:OnAcquired(data)
 	self.data = data
 
-	local size = BASE_SIZE * (ns:GetSetting("pinScale") or 1)
+	local size = BASE_SIZE * (ns:GetSetting("pinScale") or 1) * (data.sizeScale or 1)
 	self:SetSize(size, size)
 	self.Icon:SetSize(size, size)
-	self.Ring:SetSize(size * RING_SCALE, size * RING_SCALE)
-	self.Glow:SetSize(size * GLOW_SCALE, size * GLOW_SCALE)
+	self.GlowInner:SetSize(size * GLOW_INNER_SCALE, size * GLOW_INNER_SCALE)
+	self.GlowOuter:SetSize(size * GLOW_OUTER_SCALE, size * GLOW_OUTER_SCALE)
 
-	if data.atlas then
-		self.Icon:SetAtlas(data.atlas)
-	else
-		self.Icon:SetTexture(data.texture or "Interface\\Icons\\INV_Misc_QuestionMark")
+	setArt(self.Icon, data)
+	setArt(self.GlowInner, data)
+	setArt(self.GlowOuter, data)
+	-- SetAtlas can reset desaturation on some clients.
+	self.GlowInner:SetDesaturated(true)
+	self.GlowOuter:SetDesaturated(true)
+
+	local c = data.color
+	local show = c ~= nil
+	self.GlowInner:SetShown(show)
+	self.GlowOuter:SetShown(show)
+	if show then
+		self.GlowInner:SetVertexColor(c[1], c[2], c[3], GLOW_INNER_ALPHA)
+		self.GlowOuter:SetVertexColor(c[1], c[2], c[3], GLOW_OUTER_ALPHA)
 	end
-
-	local c = data.color or { 1, 1, 1 }
-	self.Ring:SetVertexColor(c[1], c[2], c[3], 1)
-	self.Glow:SetVertexColor(c[1], c[2], c[3], 0.55)
 
 	self:SetPosition(data.x, data.y)
 end
@@ -76,7 +90,13 @@ function PathfinderMapPinMixin:OnMouseClickAction(button)
 		if map and map.NavigateToParentMap then map:NavigateToParentMap() end
 		return
 	end
-	ns.Waypoint:HandleClick(button, data.mapID, data.x, data.y, data.clickOptions)
+	-- data.waypoint = { mapID, x, y } lets a layer target a more precise map than the one displayed.
+	local w = data.waypoint
+	if w then
+		ns.Waypoint:HandleClick(button, w[1], w[2], w[3], data.clickOptions)
+	else
+		ns.Waypoint:HandleClick(button, data.mapID, data.x, data.y, data.clickOptions)
+	end
 end
 
 -- Acquires pins for a data provider without ever letting an error escape into Blizzard's map

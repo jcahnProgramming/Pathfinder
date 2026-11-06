@@ -1,20 +1,21 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
-	<!-- Base look and behavior for all Pathfinder world map pins. Mixin: Layers\MapPin.lua -->
+	<!-- Base look and behavior for all Pathfinder world map pins. Mixin: Layers\MapPin.lua
+	     The glow is two larger, tinted, additive copies of the icon itself (see docs/ROADMAP.md). -->
 	<Frame name="PathfinderMapPinBaseTemplate" mixin="PathfinderMapPinMixin" enableMouse="true" virtual="true">
 		<Size x="16" y="16"/>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture parentKey="Glow" alphaMode="ADD">
+				<Texture parentKey="GlowOuter" alphaMode="ADD">
+					<Anchors><Anchor point="CENTER"/></Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="BORDER">
+				<Texture parentKey="GlowInner" alphaMode="ADD">
 					<Anchors><Anchor point="CENTER"/></Anchors>
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK">
 				<Texture parentKey="Icon">
-					<Anchors><Anchor point="CENTER"/></Anchors>
-				</Texture>
-			</Layer>
-			<Layer level="OVERLAY">
-				<Texture parentKey="Ring">
 					<Anchors><Anchor point="CENTER"/></Anchors>
 				</Texture>
 			</Layer>
@@ -28,4 +29,5 @@
 
 	<!-- One template per layer so each data provider can clear only its own pins. -->
 	<Frame name="PathfinderFlightPinTemplate" inherits="PathfinderMapPinBaseTemplate" virtual="true"/>
+	<Frame name="PathfinderInstancePinTemplate" inherits="PathfinderMapPinBaseTemplate" virtual="true"/>
 </Ui>

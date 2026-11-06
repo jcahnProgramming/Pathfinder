@@ -24,19 +24,55 @@ function SettingsPanel:OnInitialize()
 	end
 
 	local function checkbox(key, name, tooltip)
-		Settings.CreateCheckbox(category, register(key, Settings.VarType.Boolean, name), tooltip)
+		return Settings.CreateCheckbox(category, register(key, Settings.VarType.Boolean, name), tooltip)
 	end
 
-	-- Map layers -------------------------------------------------------------
-	header("Map layers")
-	checkbox("showFlightPaths", "Flight paths",
-		"Show every flight master. Green = discovered, yellow = available but not discovered, red = never available to this character.")
-	checkbox("showDungeons", "Dungeon entrances",
-		"Show dungeon entrances, tinted by level range compared to your level.")
-	checkbox("showRaids", "Raid entrances",
-		"Show raid entrances, tinted by level range compared to your level.")
-	checkbox("showCustom", "Custom pins",
-		"Show your custom pins. Individual groups can be shown or hidden from the panel on the world map.")
+	local function disable(initializer)
+		if initializer.AddModifyPredicate then
+			initializer:AddModifyPredicate(function() return false end)
+		end
+	end
+
+	local COMING_SOON = " |cff888888(coming soon)|r"
+
+	-- Layer categories (Core\Categories.lua) ---------------------------------
+	for _, cat in ipairs(ns.CATEGORIES) do
+		header(cat.label)
+
+		local anyAvailable = cat.available ~= false
+		if anyAvailable then
+			anyAvailable = false
+			for _, layer in ipairs(cat.layers) do
+				if layer.available then anyAvailable = true end
+			end
+		end
+
+		local masterLabel = "Show " .. cat.label:lower() .. " pins" .. (anyAvailable and "" or COMING_SOON)
+		local masterInit = checkbox(cat.master, masterLabel, cat.note or ("Turn every " .. cat.label:lower() .. " layer on or off."))
+		if not anyAvailable then disable(masterInit) end
+
+		for _, layer in ipairs(cat.layers) do
+			local label = layer.label .. (layer.available and "" or COMING_SOON)
+			local init = checkbox(layer.key, label, layer.tooltip or (layer.label .. " pins."))
+			local available = layer.available
+			local master = cat.master
+			if init.SetParentInitializer then
+				-- Indented under the master toggle; greyed out while the master is off.
+				init:SetParentInitializer(masterInit, function() return available and store[master] end)
+			elseif not available then
+				disable(init)
+			end
+		end
+
+		-- Instances: queue-only dungeons have no map pin, so list them here (in the debug window).
+		if cat.key == "instances" and CreateSettingsButtonInitializer then
+			layout:AddInitializer(CreateSettingsButtonInitializer(
+				"Instances without a pin yet", "Show list",
+				function() ns.WorldData:Report() end,
+				"Lists instances whose entrance hasn't been recorded yet, with where to look (from Blizzard's descriptions), plus queue-only dungeons and every recorded entrance (same as /pf entrances). Walk into an instance once and its pin appears.",
+				true))
+		end
+	end
 
 	-- Display ----------------------------------------------------------------
 	header("Display")

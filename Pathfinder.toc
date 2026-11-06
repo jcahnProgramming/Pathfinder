@@ -2,8 +2,10 @@
 ## Title: Pathfinder
 ## Notes: Clickable flight path, dungeon, raid and custom pins on the world map and minimap. Click a pin to set a waypoint.
 ## Author: Jamie
-## Version: 0.2.0
+## Version: 0.3.0
 ## Category: Map
+## X-License: GPL-3.0-or-later
+## X-Credits: Dungeon and raid entrance coordinates from Questie (GPL-3.0)
 ## IconTexture: Interface\Icons\INV_Misc_Map_01
 ## AddonCompartmentFunc: Pathfinder_OnAddonCompartmentClick
 ## SavedVariables: PathfinderDB
@@ -11,15 +13,26 @@
 
 # Core (load order matters: Init defines the namespace, Database must be the first module)
 Core\Init.lua
+Core\Categories.lua
 Core\Database.lua
 Core\Waypoint.lua
 Core\TaxiCache.lua
 Core\APICheck.lua
 
+# Static data
+Data\Instances.lua
+Core\InstanceInfo.lua
+Core\WorldData.lua
+Core\EntranceRecorder.lua
+
+# UI
+UI\DebugWindow.lua
+
 # Layers (mixin Lua before the XML templates that reference it)
 Layers\MapPin.lua
 Layers\MapPinTemplates.xml
 Layers\FlightPaths.lua
+Layers\Instances.lua
 
 # Settings
 Settings\Settings.lua

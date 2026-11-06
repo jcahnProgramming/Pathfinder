@@ -17,15 +17,18 @@ ns.SHARE_MODE = {
 Database.accountDefaults = {
 	schema = Database.SCHEMA,
 	settings = {
-		showFlightPaths = true,
-		showDungeons = true,
-		showRaids = true,
-		showCustom = true,
+		-- Category and layer toggles are added from ns.CATEGORIES (Core\Categories.lua).
 		showOnMinimap = true,
 		pinScale = 1.0,
 		incomingShareMode = ns.SHARE_MODE.POPUP,
 		apiCheckOnLogin = true,
 		debug = false,
+		showUnreleasedRaids = false, -- testing only; toggled with /pf unreleased, not in the Settings panel
+	},
+	world = {      -- observed world data (recorded entrances, later NPCs); see Core\WorldData.lua
+		schema = 1,
+		entrances = {},
+		log = {},
 	},
 	groups = {},   -- [groupID] = { name = string, shown = bool }
 	pins = {},     -- [pinID]   = { name, icon, color, mapID, x, y, group }
@@ -52,6 +55,10 @@ end
 local function migrate(db)
 	-- No migrations yet. Future schema bumps go here, keyed on db.schema.
 	db.schema = Database.SCHEMA
+end
+
+for key, value in pairs(ns:GetCategoryDefaults()) do
+	Database.accountDefaults.settings[key] = value
 end
 
 function Database:OnInitialize()
